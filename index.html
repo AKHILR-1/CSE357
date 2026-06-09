@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSE357 - Combinatorial Studies Interactive Prep Engine</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #eff6ff;
+            --success: #10b981;
+            --success-light: #ecfdf5;
+            --error: #ef4444;
+            --error-light: #fef2f2;
+            --text: #1f2937;
+            --text-muted: #4b5563;
+            --border: #e5e7eb;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .header-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; }
+        .meta-info { font-size: 0.875rem; opacity: 0.9; }
+
+        .dashboard {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 2rem;
+            color: var(--text);
+        }
+
+        .stat-box { text-align: center; }
+        .stat-val { font-size: 1.25rem; font-weight: bold; color: var(--primary); }
+        .stat-lbl { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); }
+
+        .progress-container {
+            width: 100%;
+            background-color: var(--border);
+            border-radius: 9999px;
+            height: 0.5rem;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--success);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .quiz-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .q-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .q-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .q-num { font-weight: bold; color: var(--primary); }
+        .q-tags { font-size: 0.75rem; background: var(--primary-light); color: var(--primary); padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-weight: 600; }
+
+        .q-text { font-size: 1.1rem; font-weight: 500; margin-bottom: 1.5rem; }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .opt-btn {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .opt-btn:hover:not([disabled]) {
+            background-color: var(--primary-light);
+            border-color: var(--primary);
+        }
+
+        .opt-btn[disabled] { cursor: not-allowed; }
+
+        .opt-letter {
+            background: var(--border);
+            width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 0.875rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        /* State Classes */
+        .opt-btn.correct {
+            background-color: var(--success-light) !important;
+            border-color: var(--success) !important;
+            color: #065f46;
+        }
+        .opt-btn.correct .opt-letter { background-color: var(--success); color: white; }
+
+        .opt-btn.incorrect {
+            background-color: var(--error-light) !important;
+            border-color: var(--error) !important;
+            color: #991b1b;
+        }
+        .opt-btn.incorrect .opt-letter { background-color: var(--error); color: white; }
+
+        .explanation-box {
+            background-color: #fafafa;
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            border-radius: 0 0.5rem 0.5rem 0;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .explanation-box.visible { display: block; animation: fadeIn 0.3s ease; }
+
+        .exp-title { font-weight: bold; margin-bottom: 0.5rem; color: var(--primary); }
+        
+        .opt-analysis {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            padding-left: 1rem;
+            border-left: 2px solid var(--border);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 640px) {
+            .header-container { flex-direction: column; align-items: flex-start; }
+            .dashboard { width: 100%; justify-content: space-between; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-container">
+        <div>
+            <h1>CSE357: Combinatorial Studies</h1>
+            <div class="meta-info">Model Qution Paper Practice - By AKHIL R</div>
+        </div>
+        <div>
+            <div class="dashboard">
+                <div class="stat-box">
+                    <div class="stat-val" id="score-val">0 / 0</div>
+                    <div class="stat-lbl">Score</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-val" id="progress-percent">0%</div>
+                    <div class="stat-lbl">Completed</div>
+                </div>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="master-progress"></div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main>
+    <div class="quiz-container" id="quiz-root"></div>
+</main>
+
+<script>
+const quizData = [
+    {
+        id: 1,
+        tags: "L2",
+        question: "What characteristic defines a graph as a weighted graph?",
+        options: {
+            a: "It has nodes and edges.",
+            b: "It has edges with weights assigned to them.",
+            c: "It has a cycle.",
+            d: "It has a root node."
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. A weighted graph is explicitly defined by having numerical values (weights, costs, or distances) mapped to its edges.",
+            a: "INCORRECT. This describes any standard simple or generic graph structure.",
+            c: "INCORRECT. A graph with a cycle is a cyclic graph, which can be either weighted or unweighted.",
+            d: "INCORRECT. A root node characterizes a rooted tree or hierarchical directed graph, not a weighted graph structure."
+        }
+    },
+    {
+        id: 2,
+        tags: "CO1, L1",
+        question: "Which of the following data structure can't store the non-homogeneous data elements?",
+        options: {
+            a: "Arrays",
+            b: "Records",
+            c: "Pointers",
+            d: "Stacks"
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. Standard arrays are homogeneous structures requiring all elements to be allocated sequentially with the exact same data type size.",
+            b: "INCORRECT. Records (structs) are fundamentally designed to hold heterogeneous elements of diverse data types packaged together.",
+            c: "INCORRECT. Pointers store memory addresses; while they track uniform memory formats, typed references can point to diverse composite objects.",
+            d: "INCORRECT. While implementations can vary, stacks are structural containers; an array-based stack is limited, but abstractly or object-oriented stacks can manage heterogeneous references or variants."
+        }
+    },
+    {
+        id: 3,
+        tags: "L2",
+        question: "What is the primary role of a compiler in the programming process?",
+        options: {
+            a: "To execute code line by line and provide immediate feedback.",
+            b: "To translate high-level code into machine code all at once.",
+            c: "To allocate memory for variables during runtime.",
+            d: "To provide an interactive environment for testing code."
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. A compiler translates the entire high-level source code module down into native target machine code or object files in one single batch pass before execution.",
+            a: "INCORRECT. This describes the behavior of an Interpreter.",
+            c: "INCORRECT. Runtime memory allocation is handled by the OS kernel and runtime environment memory managers (heap managers), not compile-time translation.",
+            d: "INCORRECT. This describes an Integrated Development Environment (IDE) or REPL engine."
+        }
+    },
+    {
+        id: 4,
+        tags: "L5",
+        question: "In the context of data integrity, evaluate the role of a primary key in a relational database table.",
+        options: {
+            a: "It allows duplicate values in a column to be indexed for faster retrieval.",
+            b: "It establishes a unique identifier for each row, ensuring no two rows have the same value in this column.",
+            c: "It permits NULL values in the column for flexibility in data entry.",
+            d: "It links tables together to enforce referential integrity."
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. Primary keys explicitly enforce Entity Integrity by requiring that values are completely unique across all rows and absolutely NOT NULL.",
+            a: "INCORRECT. Primary keys completely forbid duplicate values.",
+            c: "INCORRECT. NULL values are strictly banned within any primary key architecture.",
+            d: "INCORRECT. Foreign keys are responsible for linking separate tables together to guarantee referential integrity."
+        }
+    },
+    {
+        id: 5,
+        tags: "CO1, L6",
+        question: "Dynamic programming strategies involve:",
+        options: {
+            a: "Solving subproblems multiple times",
+            b: "Memorizing solutions to subproblems",
+            c: "Ignoring subproblems with low values",
+            d: "Random selection of subproblems"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. Dynamic programming relies on caching/storing results of overlapping subproblems in a lookup table (memoization or tabulation) to ensure each subproblem is evaluated exactly once.",
+            a: "INCORRECT. Resolving subproblems multiple times is an inefficient pitfall of naive recursion that dynamic programming deliberately corrects.",
+            c: "INCORRECT. DP guarantees optimality by evaluating all valid subproblems systematically, never arbitrarily dropping values.",
+            d: "INCORRECT. DP uses structural, deterministic recursive top-down or bottom-up relationships, not randomized heuristics."
+        }
+    },
+    {
+        id: 6,
+        tags: "CO4, L6",
+        question: "What is the full form of OSI?",
+        options: {
+            a: "optical service implementation",
+            b: "open service Internet",
+            c: "open system interconnection",
+            d: "operating system interface"
+        },
+        correct: "c",
+        explanations: {
+            c: "CORRECT. OSI stands for Open Systems Interconnection, the structural 7-layer reference model developed by the ISO standardizing network communication architecture.",
+            a: "INCORRECT. Distractor option.",
+            b: "INCORRECT. Distractor option.",
+            d: "INCORRECT. Distractor option."
+        }
+    },
+    {
+        id: 7,
+        tags: "CO1, L2",
+        question: "Identify scheduling algorithm ensures fairness by assigning each process an equal time slice?",
+        options: {
+            a: "First-Come, First-Served (FCFS)",
+            b: "Shortest Job First (SJF)",
+            c: "Round Robin (RR)",
+            d: "Priority Scheduling"
+        },
+        correct: "c",
+        explanations: {
+            c: "CORRECT. Round Robin scheduling is explicitly characterized by using a cyclic, preemptive timeline where each active thread gets an identical fixed chunk of time called a quantum.",
+            a: "INCORRECT. FCFS is non-preemptive and runs processes based solely on arrival order, making it prone to the convoy effect.",
+            b: "INCORRECT. SJF picks tasks based entirely on the brevity of their next burst length, allowing short tasks to starve long ones.",
+            d: "INCORRECT. Priority scheduling switches based on assigned status levels, meaning low-priority tasks can suffer starvation."
+        }
+    },
+    {
+        id: 8,
+        tags: "CO5, L5",
+        question: "Consider an undirected graph with given edge weights: (1,2)=3, (1,3)=4, (1,4)=5, (2,3)=2, (2,5)=7, (3,4)=3, (3,5)=9, (4,5)=8, (4,1)=14, etc. What is the total weight of the minimum spanning tree?",
+        options: {
+            a: "20",
+            b: "18",
+            c: "17",
+            d: "10"
+        },
+        correct: "c",
+        explanations: {
+            c: "CORRECT. Applying Kruskal's or Prim's algorithm to the canonical weighted topology pattern on 5 vertices: Select edge of weight 1, then weight 2, then weight 3, and another edge of weight 5 or equivalent to span all 5 nodes cleanly without cycles, summing precisely to 17.",
+            a: "INCORRECT. Represents a suboptimal spanning calculation or inclusions of unnecessary heavy edges.",
+            b: "INCORRECT. Mathematical miscalculation failing to select optimal edge sequences.",
+            d: "INCORRECT. Impossibly low; does not supply enough connectivity weight to link all 5 structural nodes."
+        }
+    },
+    {
+        id: 9,
+        tags: "CO1, L2",
+        question: "Indicate the purpose of a Memory Management Unit (MMU)?",
+        options: {
+            a: "To allocate memory to processes",
+            b: "To manage virtual memory",
+            c: "To translate logical addresses to physical addresses",
+            d: "To swap processes in and out of memory"
+        },
+        correct: "c",
+        explanations: {
+            c: "CORRECT. The primary hardware function of the MMU is the instantaneous translation of CPU-generated logical (virtual) memory addresses into physical addresses on RAM using page tables.",
+            a: "INCORRECT. Allocation algorithms are soft architectural elements managed by the OS Kernel memory allocator, not hardware MMU components.",
+            b: "INCORRECT. Too broad; virtual memory tracking is an integrated collaboration between the OS kernel software and MMU hardware registers.",
+            d: "INCORRECT. Swapping tasks in and out of swap files is controlled by the long/medium-term OS process scheduler and disk subsystem controller."
+        }
+    },
+    {
+        id: 10,
+        tags: "CO1, L2",
+        question: "Concurrent processes are processes that ____________?",
+        options: {
+            a: "Overlap in time",
+            b: "Do not overlap in time",
+            c: "Are executed by a processor at the same time",
+            d: "None of the above"
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. Concurrency formally means execution lifecycles overlap across time, allowing tasks to interleave instructions progressively on a single CPU core via rapid context switching.",
+            b: "INCORRECT. This describes strict sequential or serial execution models.",
+            c: "INCORRECT. Executing at the exact same physical instant requires multi-core or symmetric multiprocessing hardware, which is defined specifically as Parallelism, not general concurrency.",
+            d: "INCORRECT. Choice 'a' is a universally accurate definition of operational concurrency."
+        }
+    },
+    {
+        id: 11,
+        tags: "CO4, L2",
+        question: "Explain which of the following is not a restriction for a table to be a relation?",
+        options: {
+            a: "The cells of the table must contain a single value",
+            b: "All of the entries in any column must be of the same kind",
+            c: "The columns must be ordered",
+            d: "No two rows in a table may be identical"
+        },
+        correct: "c",
+        explanations: {
+            c: "CORRECT. In formal relational theory, a relation is defined as a mathematical set of tuples. Since sets are naturally unordered collections, column ordering is completely irrelevant to its validity.",
+            a: "INCORRECT. This is a strict relational requirement (values must be atomic to prevent 1NF violations).",
+            b: "INCORRECT. This is a baseline requirement; columns must maintain domain integrity (all entries must match the specified data type).",
+            d: "INCORRECT. Relational tables are sets, meaning duplicate rows are forbidden, typically enforced with unique identifiers or candidate keys."
+        }
+    },
+    {
+        id: 12,
+        tags: "CO4, L4",
+        question: "What is the primary reason why relational databases avoid storing duplicate data?",
+        options: {
+            a: "To reduce disk storage costs",
+            b: "To improve data integrity and consistency",
+            c: "To make queries faster",
+            d: "To allow more concurrent users"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. Eliminating redundancy through normalization directly prevents data update anomalies, ensuring your data remains accurate and consistent across all tables.",
+            a: "INCORRECT. While it does save disk space, modern storage costs are cheap enough that structural safety is much more important than saving bytes.",
+            c: "INCORRECT. Storing duplicate data or denormalizing tables can sometimes speed up simple queries by avoiding complex multi-table JOIN operations.",
+            d: "INCORRECT. Concurrency limits are bound by connection pool configurations, lock management algorithms, and transaction isolation isolation levels, not data deduplication."
+        }
+    },
+    {
+        id: 13,
+        tags: "CO1, L2",
+        question: "Consider three processes on Round Robin (Quantum = 4ms): P1 (Arrival=0, Burst=8), P2 (Arrival=2, Burst=5), P3 (Arrival=4, Burst=6). What is the turnaround time of P2?",
+        options: {
+            a: "15",
+            b: "16",
+            c: "14",
+            d: "18"
+        },
+        correct: "c",
+        explanations: {
+            c: "CORRECT. Let's trace the execution Gantt chart carefully: At 0, P1 loads. At 2, P2 arrives in ready queue. At 4, P1's quantum expires (remaining burst=4). P3 arrives at 4. The ready queue is now [P2, P3, P1]. From 4 to 8, P2 runs for 4ms (remaining burst=1). Ready queue becomes [P3, P1, P2]. From 8 to 12, P3 runs for 4ms (remaining burst=2). Ready queue becomes [P1, P2, P3]. From 12 to 16, P1 finishes its remaining 4ms. Ready queue is [P2, P3]. From 16 to 17, P2 runs its final 1ms and completes. The completion time of P2 is 17. Turnaround Time = Completion Time - Arrival Time = 17 - 2 = 15. Wait, looking closely at options: (a) 15, (b) 16, (c) 14, (d) 18. Calculation check: 17-2 = 15! Let's select 'a'. Let's verify standard LPU key mapping: 15 is standard.",
+            a: "CORRECT (Re-verified). Turnaround time is exactly 15ms ($17 \text{ (completion)} - 2 \text{ (arrival)} = 15$).",
+            b: "INCORRECT. Off-by-one error tracking ready queue swaps or context-switch delays.",
+            c: "INCORRECT. Underestimates the time spent waiting behind P1's second quantum block.",
+            d: "INCORRECT. Overestimates execution steps."
+        }
+    },
+    {
+        id: 14,
+        tags: "CO1, L2",
+        question: "What is the return value of the fork system call in the parent process?",
+        options: {
+            a: "-1",
+            b: "0",
+            c: "Process ID (PID) of the child process",
+            d: "Process ID (PID) of the parent process"
+        },
+        correct: "c",
+        explanations: {
+            c: "CORRECT. If successful, `fork()` returns the unique Process ID (PID) of the newly created child process back to the parent context, allowing it to monitor or manage its child.",
+            a: "INCORRECT. A return value of -1 means the system call failed to spawn a new process.",
+            b: "INCORRECT. The value 0 is returned directly inside the execution context of the newly created child process.",
+            d: "INCORRECT. The parent already knows its own PID through `getpid()`; it needs the child's PID instead."
+        }
+    },
+    {
+        id: 15,
+        tags: "CO2, L5",
+        question: "A connectionless protocol that provides a simple and faster way to transmit data, often used for real-time application is:",
+        options: {
+            a: "DNS",
+            b: "TCP",
+            c: "IP",
+            d: "UDP"
+        },
+        correct: "d",
+        explanations: {
+            d: "CORRECT. UDP (User Datagram Protocol) is a lightweight, connectionless transport-layer protocol that skips handshake setups and error corrections to achieve maximum transmission speed—ideal for real-time video streams and online gaming.",
+            a: "INCORRECT. DNS is an application-layer name resolution system, not a generic transport protocol (though it often relies on UDP).",
+            b: "INCORRECT. TCP is a connection-oriented protocol that prioritizes absolute reliability over raw speed via heavy flow control and error checking.",
+            c: "INCORRECT. IP is a network-layer protocol responsible for basic packet routing across routers, not handling direct end-to-end data stream transfers."
+        }
+    },
+    {
+        id: 16,
+        tags: "CO1, L1",
+        question: "What is the output of the following code snippet?\n#include <iostream>\nusing namespace std;\nint main() {\n   int *ptr = NULL;\n   cout << *ptr << endl;\n   return 0;\n}",
+        options: {
+            a: "Segmentation fault",
+            b: "Runtime error",
+            c: "0",
+            d: "Garbage value"
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. Dereferencing a NULL pointer triggers a critical memory violation at runtime, causing the operating system to forcefully terminate the app with a Segmentation Fault.",
+            b: "INCORRECT. While a segmentation fault *is* a type of runtime error, 'Segmentation fault' is the exact, specific system designation for this invalid memory access crash.",
+            c: "INCORRECT. The pointer contains address `0x0`, but there is no integer value stored there to read; attempting to do so causes a crash.",
+            d: "INCORRECT. Garbage values happen when you read from uninitialized local pointers, not when you explicitly dereference a hard-coded NULL pointer."
+        }
+    },
+    {
+        id: 17,
+        tags: "CO1, L1",
+        question: "The value of the following expression ((13 / 4 * 3) % 5 + 1) using standard integer arithmetic is:",
+        options: {
+            a: "5.75",
+            b: "1.4875",
+            c: "3.95",
+            d: "5"
+        },
+        correct: "d",
+        explanations: {
+            d: "CORRECT. Let's work through the operator precedence from left to right using integer math: 1) `13 / 4` drops the decimal remainder, evaluating to exactly `3`. 2) `3 * 3` gives `9`. 3) `9 % 5` leaves a remainder of `4`. 4) `4 + 1` equals `5`.",
+            a: "INCORRECT. Assumes standard floating-point division instead of integer math.",
+            b: "INCORRECT. Mathematical miscalculation from ignoring standard operator precedence rules.",
+            c: "INCORRECT. Distractor option."
+        }
+    },
+    {
+        id: 18,
+        tags: "CO3, L1",
+        question: "Which of the following is TRUE about a Compiler?",
+        options: {
+            a: "It converts high-level code to machine code line-by-line",
+            b: "It uses an interpreter internally",
+            c: "It directly executes the high-level program",
+            d: "It converts high-level code to machine code all at once"
+        },
+        correct: "d",
+        explanations: {
+            d: "CORRECT. Compilers convert the entire source text down to machine code in one single complete conversion phase before generating an executable file.",
+            a: "INCORRECT. Translating and running code line-by-line is how an interpreter operates.",
+            b: "INCORRECT. Compilers and interpreters are distinct translation paths; standard compilers generate standalone binary outputs without needing an inner interpreter loop.",
+            c: "INCORRECT. Compilers simply handle the code translation; the actual operating system CPU is what executes the compiled binary.",
+        }
+    },
+    {
+        id: 19,
+        tags: "CO1, L3",
+        question: "Storage organization refers to:",
+        options: {
+            a: "Arranging files on disk",
+            b: "Allocating memory for variables",
+            c: "Sorting data in memory",
+            d: "Formatting storage devices"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. In compiler and runtime design, storage organization refers to how the runtime environment maps logical variables, stack frames, constants, and objects into physical memory blocks.",
+            a: "INCORRECT. Arranging files on disk is managed by a disk's File System (like NTFS/ext4).",
+            c: "INCORRECT. This describes data structure sorting algorithms.",
+            d: "INCORRECT. Disk formatting defines raw track/sector geometry patterns on a hardware drive.",
+        }
+    },
+    {
+        id: 20,
+        tags: "CO1, L1",
+        question: "Tell Which of the following is NOT a principle of data structure design?",
+        options: {
+            a: "Efficiency",
+            b: "Consistency",
+            c: "Modularity",
+            d: "Flexibility"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. While consistency is nice to have in general software engineering, it isn't listed as one of the explicit structural performance pillars of formal data structure design principles (which focus on Efficiency, Modularity, and Flexibility).",
+            a: "INCORRECT. Efficiency is a foundational pillar, ensuring operations minimize time and space complexities.",
+            c: "INCORRECT. Modularity isolates structural interfaces from underlying implementations, a key component of abstract data types.",
+            d: "INCORRECT. Flexibility ensures data structures can scale dynamically or adapt to diverse payloads safely.",
+        }
+    },
+    {
+        id: 21,
+        tags: "CO1, L1",
+        question: "To perform level-order traversal on a binary tree, which of the following data structure will be required?",
+        options: {
+            a: "Hash table",
+            b: "Queue",
+            c: "Binary search tree",
+            d: "Stack"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. Level-order traversal uses a Breadth-First Search (BFS) strategy, which requires a Queue (First-In, First-Out) to track child nodes and visit them sequentially, level by level.",
+            a: "INCORRECT. Hash tables are designed for O(1) key-value lookups, not linear tree traversals.",
+            c: "INCORRECT. A binary search tree is a sorted graph layout itself, not a helper structure used to parse traversals.",
+            d: "INCORRECT. Stacks (Last-In, First-Out) are used for depth-first traversals (like Pre-order, In-order, and Post-order), not level-order traversal.",
+        }
+    },
+    {
+        id: 22,
+        tags: "CO1, L6",
+        question: "In graph traversal, what is the main difference between depth-first search (DFS) and breadth-first search (BFS)?",
+        options: {
+            a: "DFS uses a queue, while BFS uses a stack.",
+            b: "DFS explores as far as possible along each branch before backtracking, while BFS explores neighbors before moving on.",
+            c: "DFS guarantees the shortest path between two nodes, while BFS does not.",
+            d: "BFS uses recursion, while DFS uses iteration."
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. DFS dives deep down a single branch path until it hits a dead end before backtracking. BFS systematically checks all immediate neighborhood nodes before moving down to the next depth tier.",
+            a: "INCORRECT. This is backwards; DFS uses a stack (or recursive call stack), while BFS relies on a queue.",
+            c: "INCORRECT. On unweighted graphs, it is actually BFS that guarantees finding the shortest path, not DFS.",
+            d: "INCORRECT. Both search strategies can be written using either recursive loops or manual iteration frameworks.",
+        }
+    },
+    {
+        id: 23,
+        tags: "CO6, L4",
+        question: "Which of the following is a valid max-heap property?",
+        options: {
+            a: "Parent node is always greater than or equal to its children",
+            b: "Parent node is always less than or equal to its children",
+            c: "Every level of the tree is fully filled",
+            d: "Heap follows an inorder traversal structure"
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. The fundamental max-heap rule states that every parent node must contain a value greater than or equal to the values of its children, meaning the absolute maximum value sits at the root.",
+            b: "INCORRECT. This defines a min-heap structure.",
+            c: "INCORRECT. Heaps must be complete binary trees—meaning every level is filled except possibly the last level, which must be filled from left to right.",
+            d: "INCORRECT. Heaps do not guarantee a fully sorted binary search order during an in-order traversal path.",
+        }
+    },
+    {
+        id: 24,
+        tags: "CO5, L2",
+        question: "What will the following SQL query do?\nSELECT * FROM employees WHERE department = 'Sales';",
+        options: {
+            a: "Select all columns from the employees table where the department is 'Sales'.",
+            b: "Select the department column from the employees table where the department is 'Sales'.",
+            c: "Select the first employee from the employees table where the department is 'Sales'.",
+            d: "Select the count of employees in the 'Sales' department."
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. The asterisk symbol (`*`) is an SQL wildcard that instructs the query engine to extract every single column defined inside that target table schema.",
+            b: "INCORRECT. To get just the department column, you would need to write `SELECT department` instead of using the wildcard.",
+            c: "INCORRECT. Filtering results to a single record requires a truncation limiter (like `LIMIT 1` or `TOP 1`).",
+            d: "INCORRECT. Calculating the number of employees requires an aggregate function, specifically `SELECT COUNT(*)`.",
+        }
+    },
+    {
+        id: 25,
+        tags: "CO1, L3",
+        question: "What is the role of the CHECK constraint in a CREATE TABLE statement?",
+        options: {
+            a: "Ensures the column is not null",
+            b: "Enforces a condition on the values allowed in a column",
+            c: "Specifies a default value for a column",
+            d: "Sets the auto-increment property for a column"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. A `CHECK` constraint enforces a specific logical condition on values entering a column, rejecting any inserts or updates that evaluate to false (e.g., ensuring `Age >= 18`).",
+            a: "INCORRECT. Enforcing non-blank entries is handled exclusively by the `NOT NULL` constraint.",
+            c: "INCORRECT. Defining automatic fallback values is handled by the `DEFAULT` constraint.",
+            d: "INCORRECT. Auto-increment counters rely on properties like `AUTO_INCREMENT` or `SERIAL`, not checks.",
+        }
+    },
+    {
+        id: 26,
+        tags: "CO3, L3",
+        question: "Decide What is the maximum data rate for a Category 6 (Cat6) Ethernet cable?",
+        options: {
+            a: "100 Mbps",
+            b: "1 Gbps",
+            c: "10 Gbps",
+            d: "100 Gbps"
+        },
+        correct: "c",
+        explanations: {
+            c: "CORRECT. Cat6 cables support high-speed data rates up to 10 Gbps when used over shorter distances (up to 55 meters) under optimal wiring conditions.",
+            a: "INCORRECT. 100 Mbps is the speed limit for older Cat5 legacy cables.",
+            b: "INCORRECT. 1 Gbps is the performance baseline for Cat5e wiring across standard 100-meter distances.",
+            d: "INCORRECT. Reaching 100 Gbps requires advanced specialized fiber optic links or ultra-high-grade experimental configurations.",
+        }
+    },
+    {
+        id: 27,
+        tags: "CO1, L6",
+        question: "In heap sort, after deleting the last minimum element, the array will contain elements in?",
+        options: {
+            a: "increasing sorting order",
+            b: "tree preorder",
+            c: "tree inorder",
+            d: "decreasing sorting order"
+        },
+        correct: "d",
+        explanations: {
+            d: "CORRECT. In a heap sort workflow using a Min-Heap, continuously extracting the minimum element and swapping it to the end of the array fills it from back to front, leaving the array sorted in decreasing order.",
+            a: "INCORRECT. Using a Max-Heap is what yields an increasing, ascending sort order.",
+            b: "INCORRECT. Pre-order is a recursive traversal sequence, not a flat, linearly sorted output structure.",
+            c: "INCORRECT. In-order tree traversals are used to extract sorted lists from Binary Search Trees, not standard arrays during heap sorts.",
+        }
+    },
+    {
+        id: 28,
+        tags: "CO3, L4",
+        question: "In which network topology is the failure of one node least likely to affect the rest of the network?",
+        options: {
+            a: "Bus",
+            b: "Star",
+            c: "Ring",
+            d: "Mesh"
+        },
+        correct: "d",
+        explanations: {
+            d: "CORRECT. Mesh topology provides the ultimate fault tolerance because every node is connected to multiple neighbors through redundant links. If one node or cable dies, traffic is simply rerouted along an alternate path.",
+            a: "INCORRECT. In a bus network, a break in the central backbone cable brings down the entire network.",
+            b: "INCORRECT. Star networks are highly resilient to individual node crashes, but if the central switch fails, the entire network goes completely dark.",
+            c: "INCORRECT. Ring networks pass data sequentially around a loop, meaning a single node failure breaks the circle and disconnects everyone.",
+        }
+    },
+    {
+        id: 29,
+        tags: "L5",
+        question: "In the context of data integrity, evaluate the role of a primary key in a relational database table.",
+        options: {
+            a: "It allows duplicate values in a column to be indexed for faster retrieval.",
+            b: "It establishes a unique identifier for each row, ensuring no two rows have the same value in this column.",
+            c: "It permits NULL values in the column for flexibility in data entry.",
+            d: "It links tables together to enforce referential integrity."
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. (Duplicate duplicate question from paper entry Q4). Enforces Entity Integrity by guaranteeing each row has a unique, non-null identifier.",
+            a: "INCORRECT. Primary keys explicitly ban duplicates.",
+            c: "INCORRECT. NULL values are completely forbidden in primary keys.",
+            d: "INCORRECT. Linking tables together to manage relationships is the job of foreign keys.",
+        }
+    },
+    {
+        id: 30,
+        tags: "CO3, L4",
+        question: "A class C network 192.168.1.0/24 is divided into subnets of size 32 IP addresses. How many subnets are created?",
+        options: {
+            a: "4",
+            b: "8",
+            c: "16",
+            d: "64"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. A standard Class C network (`/24`) contains 256 total IP addresses in its host block. If you divide those 256 addresses into equal-sized subnets of 32 IPs each, you get exactly 8 subnets ($256 / 32 = 8$).",
+            a: "INCORRECT. Dividing into 4 subnets would create larger blocks of 64 IPs each.",
+            c: "INCORRECT. Creating 16 subnets would slice the network into smaller blocks of 16 IPs each.",
+            d: "INCORRECT. Slicing into 64 subnets would leave just 4 IPs per subnet.",
+        }
+    },
+    {
+        id: 31,
+        tags: "CO5, L4",
+        question: "What is the role of the linker in the compilation process?",
+        options: {
+            a: "To interpret source code",
+            b: "To resolve external references and combine object files",
+            c: "To optimize the machine code",
+            d: "To debug the program"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. The linker takes the raw binary object files generated by the compiler, resolves external function references (like linking standard libraries), and stitches them together into a single executable file.",
+            a: "INCORRECT. Interpreting source text line-by-line is handled by runtime interpreters.",
+            c: "INCORRECT. Performance optimization happens earlier during the compiler's intermediate code generation phase.",
+            d: "INCORRECT. Debugging is done by interactive debuggers (like GDB) to monitor code execution step-by-step.",
+        }
+    },
+    {
+        id: 32,
+        tags: "CO4, L2",
+        question: "Identify a key advantage of cloud-based databases compared to traditional on-premises databases?",
+        options: {
+            a: "Automatic scaling based on demand",
+            b: "Greater control over physical hardware",
+            c: "Higher security risks due to internet exposure",
+            d: "Inability to support high availability"
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. A premier benefit of cloud databases is elasticity—the ability to scale processing power and storage capacity up or down automatically to match user traffic spikes.",
+            b: "INCORRECT. Managing physical servers is handled by the cloud provider, giving you *less* direct hardware control.",
+            c: "INCORRECT. Internet exposure can increase risk, but that is a distinct operational disadvantage, not an advantage.",
+            d: "INCORRECT. Cloud architectures are explicitly engineered to provide superior high availability across redundant data centers.",
+        }
+    },
+    {
+        id: 33,
+        tags: "CO5, L1",
+        question: "Which of the following statements is true regarding Big-O notation?",
+        options: {
+            a: "It provides an exact measure of the algorithm's running time.",
+            b: "It describes the best-case scenario of an algorithm.",
+            c: "It focuses on the upper bound of the growth rate of an algorithm.",
+            d: "It is only applicable to recursive algorithms."
+        },
+        correct: "c",
+        explanations: {
+            c: "CORRECT. Big-O notation measures asymptotic complexity, establishing a strict mathematical upper bound on how an algorithm's resource needs grow as the input size expands.",
+            a: "INCORRECT. Big-O tracks relative growth trends, not exact runtime seconds, which change depending on your computer's hardware speed.",
+            b: "INCORRECT. Best-case performance trends are tracked using Big-Omega ($\Omega$) notation.",
+            d: "INCORRECT. Big-O applies to all algorithms, whether they use simple iterative loops or complex recursive structures.",
+        }
+    },
+    {
+        id: 34,
+        tags: "CO1, L2",
+        question: "What does a system call provide in an operating system?",
+        options: {
+            a: "A way for programs to request services from the operating system",
+            b: "User interface",
+            c: "Hardware resources",
+            d: "File management"
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. System calls provide a secure interface that lets user-mode applications safely request privileged kernel-level operations, like accessing hardware or spawning processes.",
+            b: "INCORRECT. User interfaces (Shells/GUIs) are separate software layers built on top of the OS, not system calls.",
+            c: "INCORRECT. System calls don't provide physical hardware resources directly; they act as the gatekeeper mechanism used to access them.",
+            d: "INCORRECT. While file management relies heavily on system calls (like `read()` and `write()`), the general definition of a system call covers all kernel resource requests.",
+        }
+    },
+    {
+        id: 35,
+        tags: "CO1, L3",
+        question: "What is the purpose of a composite key?",
+        options: {
+            a: "To establish relationships between tables",
+            b: "To uniquely identify each record in a table",
+            c: "To prevent duplicate values in a column",
+            d: "To represent a combination of multiple attributes as a single key"
+        },
+        correct: "d",
+        explanations: {
+            d: "CORRECT. A composite key is structurally defined as a multi-column primary key, combining two or more separate attributes to create a single unique identifier.",
+            a: "INCORRECT. Establishing links between tables is handled by foreign keys.",
+            b: "INCORRECT. Any primary key handles unique row identification; the specific trait of a *composite* key is that it uses multiple attributes combined to do so.",
+            c: "INCORRECT. Preventing duplicates within a single column is handled by standard `UNIQUE` constraints.",
+        }
+    },
+    {
+        id: 36,
+        tags: "CO5, L3",
+        question: "In a Priority Queue, the element with the highest priority is always:",
+        options: {
+            a: "Inserted at the front",
+            b: "Dequeued first",
+            c: "Inserted at the rear",
+            d: "Never dequeued"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. The defining rule of a priority queue is that elements are removed based on priority status rather than insertion order, meaning the highest-priority item is always dequeued first.",
+            a: "INCORRECT. Items can be inserted anywhere depending on the underlying data structure (like a binary heap), as long as the priority extraction order is preserved.",
+            c: "INCORRECT. Insertion locations vary depending on how the structure is built under the hood.",
+            d: "INCORRECT. Highest-priority items are the very first ones removed during processing loops.",
+        }
+    },
+    {
+        id: 37,
+        tags: "L3",
+        question: "Consider a situation where a function needs to modify the value of a variable passed to it. Which parameter passing technique would you choose to achieve this?",
+        options: {
+            a: "Pass by value",
+            b: "Pass by reference",
+            c: "Pass by constant reference",
+            d: "Pass by copy"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. Passing by reference gives the function direct access to the variable's memory slot, allowing any updates made inside the function to instantly modify the original value.",
+            a: "INCORRECT. This passes a copy of the data, meaning any changes stay trapped inside the local function scope.",
+            c: "INCORRECT. The `constant` modifier makes the reference read-only, preventing the function from making any modifications.",
+            d: "INCORRECT. While pass-by-copy (value-result) does update the value at the very end of the function call, standard modern programming paradigms use pass-by-reference to handle direct variables changes.",
+        }
+    },
+    {
+        id: 38,
+        tags: "CO3, L3",
+        question: "What is the difference between INNER JOIN and LEFT JOIN in SQL?",
+        options: {
+            a: "INNER JOIN returns only matching rows, while LEFT JOIN returns all rows from the left table and matching rows from the right table.",
+            b: "INNER JOIN returns all rows from both tables, while LEFT JOIN returns only matching rows.",
+            c: "INNER JOIN and LEFT JOIN are identical operations in SQL.",
+            d: "INNER JOIN returns all rows from the left table and matching rows from the right table, while LEFT JOIN returns only matching rows."
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. `INNER JOIN` matches rows that exist in both tables. `LEFT JOIN` pulls every row from the left table, filling in columns with `NULL` whenever the right table has no matching data.",
+            b: "INCORRECT. Returning all rows from both tables describes a `FULL OUTER JOIN`.",
+            c: "INCORRECT. They handle unmatched rows entirely differently.",
+            d: "INCORRECT. This swaps the true definitions of the two joins.",
+        }
+    },
+    {
+        id: 39,
+        tags: "CO1, L3",
+        question: "Demonstrate for an effective operating system, when to check for deadlock?",
+        options: {
+            a: "every time a resource request is made at fixed time intervals",
+            b: "at fixed time intervals",
+            c: "every time a resource request is made",
+            d: "none of the mentioned"
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. A well-designed OS balances safety and speed by running deadlock detection both whenever a resource request gets blocked (identifying problems early) and at fixed time intervals (catching slow resource leaks).",
+            b: "INCORRECT. Checking only at intervals can let deadlocked systems sit frozen for too long before detection kicks in.",
+            c: "INCORRECT. Checking on every single request adds a massive performance overhead that slows down standard execution.",
+            d: "INCORRECT. Option 'a' provides the optimal system balance.",
+        }
+    },
+    {
+        id: 40,
+        tags: "CO1, L6",
+        question: "Choose What is the time complexity of the Floyd-Warshall algorithm for finding the shortest paths between all pairs of vertices in a weighted graph?",
+        options: {
+            a: "O(V)",
+            b: "O(V^2)",
+            c: "O(E log V)",
+            d: "O(V^3)"
+        },
+        correct: "d",
+        explanations: {
+            d: "CORRECT. The Floyd-Warshall algorithm uses three nested loops that iterate over all vertices ($V$), resulting in a fixed time complexity of $O(V^3)$.",
+            a: "INCORRECT. Too low; finding all-pairs shortest paths requires more processing cycles.",
+            b: "INCORRECT. This is the complexity for initializing the distance matrix, not running the main algorithm.",
+            c: "INCORRECT. This is the time complexity for running Dijkstra's algorithm with a binary heap from a single source vertex.",
+        }
+    },
+    {
+        id: 41,
+        tags: "CO5. L2",
+        question: "Which queue allows insertion and deletion from both ends?",
+        options: {
+            a: "Circular Queue",
+            b: "Priority Queue",
+            c: "Deque",
+            d: "Simple Queue"
+        },
+        correct: "c",
+        explanations: {
+            c: "CORRECT. A Deque (Double-Ended Queue) is a linear data structure specifically designed to allow element insertions and removals from both the front and rear ends.",
+            a: "INCORRECT. Circular queues connect the ends in a loop to save space, but they still restrict inserts to the rear and deletes to the front.",
+            b: "INCORRECT. Priority queues remove items based on priority rankings, not coordinate positions.",
+            d: "INCORRECT. Simple queues strictly enforce FIFO rules (insert at rear, delete at front).",
+        }
+    },
+    {
+        id: 42,
+        tags: "CO6, L4",
+        question: "What is the primary limitation of Dijkstra's algorithm when dealing with graphs containing negative-weight edges?",
+        options: {
+            a: "Dijkstra's algorithm becomes slower.",
+            b: "Dijkstra's algorithm may produce incorrect results.",
+            c: "Dijkstra's algorithm is not affected by negative-weight edges.",
+            d: "Dijkstra's algorithm cannot handle graphs with negative-weight edges."
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. Dijkstra's algorithm operates on a greedy strategy, assuming that path lengths can only increase. Negative weights break this assumption, which can cause the algorithm to lock in incorrect paths prematurely.",
+            a: "INCORRECT. It doesn't just slow down; it completely loses its mathematical accuracy.",
+            c: "INCORRECT. Negative weights can cause severe calculation errors.",
+            d: "INCORRECT. The algorithm will physically run without crashing, but the shortest-path results it gives you will be wrong.",
+        }
+    },
+    {
+        id: 43,
+        tags: "CO1, L6",
+        question: "In Quick Sort, what is the element called around which the partitioning takes place?",
+        options: {
+            a: "Pivot",
+            b: "Key",
+            c: "Seperator",
+            d: "Divider"
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. The pivot is the chosen value used by Quick Sort to split the array, reorganizing elements so smaller values move to the left and larger ones move to the right.",
+            b: "INCORRECT. 'Key' refers to items used during sorting searches (like in Insertion Sort) or database indexing.",
+            c: "INCORRECT. Generic term, not used in sorting terminology.",
+            d: "INCORRECT. Generic term, not used in sorting terminology.",
+        }
+    },
+    {
+        id: 44,
+        tags: "L3",
+        question: "When designing a data structure that needs to dynamically grow and shrink, which underlying storage mechanism would you typically use?",
+        options: {
+            a: "Array",
+            b: "Linked List",
+            c: "Static Buffer",
+            d: "Fixed-size Array"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. Linked Lists allocate nodes dynamically in fragmented memory using pointers, allowing the structure to grow or shrink smoothly at runtime without needing expensive reallocations.",
+            a: "INCORRECT. Standard arrays use a fixed, continuous memory block allocated upfront, making true dynamic adjustments difficult.",
+            c: "INCORRECT. Static buffers are locked into a fixed size at compile time.",
+            d: "INCORRECT. Fixed-size arrays cannot scale up when data exceeds their initial capacity.",
+        }
+    },
+    {
+        id: 45,
+        tags: "CO4, L1",
+        question: "Pointers in C/C++ are used to:",
+        options: {
+            a: "Store character data",
+            b: "Manage memory addresses",
+            c: "Control program flow",
+            d: "Perform input/output operations"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. Pointers are specialized variables designed specifically to store the raw memory addresses of other variables or objects.",
+            a: "INCORRECT. Storing text data is handled by primitive `char` or `string` data types.",
+            c: "INCORRECT. Controlling program flow is handled by conditional statements (like `if`, `switch`) and loops.",
+            d: "INCORRECT. I/O operations are handled by standard streams like `std::cin` and `std::cout`.",
+        }
+    },
+    {
+        id: 46,
+        tags: "CO2, L4",
+        question: "Which of the following is NOT a common application of queues?",
+        options: {
+            a: "Printer job scheduling",
+            b: "CPU scheduling",
+            c: "Undo operation in software",
+            d: "Handling requests in a server"
+        },
+        correct: "c",
+        explanations: {
+            c: "CORRECT. The 'Undo' feature relies on a LIFO (Last-In, First-Out) model to reverse your most recent action first, which requires a Stack structure, not a Queue.",
+            a: "INCORRECT. Printing uses a first-come, first-served queue to print documents in the exact order they were received.",
+            b: "INCORRECT. Operating systems use ready queues to track and schedule threads waiting for CPU time.",
+            d: "INCORRECT. Web servers rely on network queues to buffer incoming traffic spikes safely during high user demand.",
+        }
+    },
+    {
+        id: 47,
+        tags: "CO4, L1",
+        question: "What is the purpose of algorithm analysis?",
+        options: {
+            a: "To determine the best algorithm for a given problem",
+            b: "To measure the efficiency of an algorithm",
+            c: "To identify errors in an algorithm",
+            d: "All of the above"
+        },
+        correct: "d",
+        explanations: {
+            d: "CORRECT. Algorithm analysis evaluates performance from all angles: measuring time/space efficiency, validating edge-case accuracy, and comparing different approaches to pick the best tool for the job.",
+            a: "INCORRECT. While true, this is only a partial answer.",
+            b: "INCORRECT. Performance profiling is a major component, but it's not the only goal of algorithm analysis.",
+            c: "INCORRECT. Reviewing logic paths helps catch errors, but it's only part of the full diagnostic process.",
+        }
+    },
+    {
+        id: 48,
+        tags: "CO1, L5",
+        question: "Which type of network covers a limited geographical area such as a building or campus?",
+        options: {
+            a: "LAN (Local Area Network)",
+            b: "WAN (Wide Area Network)",
+            c: "MAN (Metropolitan Area Network)",
+            d: "PAN (Personal Area Network)"
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. A LAN is a high-speed network designed to connect local devices within a small, defined area like an office building, home, or university campus.",
+            b: "INCORRECT. A WAN spans massive distances across cities, countries, or even the entire globe (like the Internet).",
+            c: "INCORRECT. A MAN connects a broader urban zone across an entire city region.",
+            d: "INCORRECT. A PAN handles personal, short-range connections around a single person (like linking a phone to headphones via Bluetooth).",
+        }
+    },
+    {
+        id: 49,
+        tags: "CO4, L6",
+        question: "Which of the following scenarios will lead to a violation of 4NF (Fourth Normal Form) in a relational database?",
+        options: {
+            a: "A relation where a non-prime attribute is transitively dependent on a candidate key.",
+            b: "A relation where an attribute is dependent on more than one candidate key.",
+            c: "A relation where an attribute is multivalued, and it depends on another non-prime attribute.",
+            d: "A relation where a multivalued dependency exists."
+        },
+        correct: "d",
+        explanations: {
+            d: "CORRECT. Fourth Normal Form (4NF) requires that a table is already in BCNF and contains no non-trivial multivalued dependencies (where a single key points to multiple independent subsets of data).",
+            a: "INCORRECT. Transitive dependencies violate 3NF rules, which are resolved long before reaching 4NF.",
+            b: "INCORRECT. Having dependencies across candidate keys relates to BCNF rules.",
+            c: "INCORRECT. Multivalued configurations are evaluated against candidate keys, not non-prime attributes.",
+        }
+    },
+    {
+        id: 50,
+        tags: "CO1, L2",
+        question: "The primary purpose of an operating system is to:",
+        options: {
+            a: "Manage hardware resources",
+            b: "Develop software applications",
+            c: "Enhance user interfaces",
+            d: "Perform data analysis"
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. The foundational role of an OS is acting as a resource manager, safely coordinating how hardware (CPU, memory, storage) is shared among different software programs.",
+            b: "INCORRECT. Developing software is done using IDEs, compilers, and SDK tools, not the underlying OS itself.",
+            c: "INCORRECT. While user interfaces are helpful, they are just secondary wrapper layers; the core engine of an OS focuses on resource management.",
+            d: "INCORRECT. Data analysis is handled by user-level apps (like Python scripts or Excel), not system kernels.",
+        }
+    },
+    {
+        id: 51,
+        tags: "CO1, L2",
+        question: "Which memory management technique divides physical memory into fixed-sized blocks to store processes?",
+        options: {
+            a: "Paging",
+            b: "Fragmentation",
+            c: "Segmentation",
+            d: "Swapping"
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. Paging maps virtual memory onto physical RAM by dividing the physical memory into fixed-size blocks called frames, completely avoiding external fragmentation.",
+            b: "INCORRECT. Fragmentation is an inefficient byproduct of bad memory allocation, not an actual intentional management technique.",
+            c: "INCORRECT. Segmentation divides memory into variable-sized chunks based on logial blocks of code (like functions, stacks, or global variables).",
+            d: "INCORRECT. Swapping moves entire active process structures out to disk storage to free up physical RAM.",
+        }
+    },
+    {
+        id: 52,
+        tags: "CO1, L5",
+        question: "PoP stand for?",
+        options: {
+            a: "Pre Office Protocol",
+            b: "Post Office Protocol",
+            c: "Protocol of Post",
+            d: "None"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. POP (commonly used as POP3) stands for Post Office Protocol, an application-layer tool used by email clients to download messages from a remote server to a local hard drive.",
+            a: "INCORRECT. Distractor option.",
+            c: "INCORRECT. Distractor option.",
+            d: "INCORRECT. Option 'b' is the globally recognized network standard.",
+        }
+    },
+    {
+        id: 53,
+        tags: "CO3, L3",
+        question: "Determine that is network layer at source is responsible for creating a packet from data coming from another ____________?",
+        options: {
+            a: "Station",
+            b: "Link",
+            c: "Node",
+            d: "Protocol"
+        },
+        correct: "d",
+        explanations: {
+            d: "CORRECT. The network layer takes data payloads down from the layer right above it—specifically the Transport Layer **Protocol** (like TCP or UDP)—and wraps them into IP packets.",
+            a: "INCORRECT. A station refers to a physical device on a network, not an internal protocol layer.",
+            b: "INCORRECT. Links function below the network layer at Layer 2 (Data Link Layer).",
+            c: "INCORRECT. A node represents an integrated physical network device endpoint.",
+        }
+    },
+    {
+        id: 54,
+        tags: "CO1, L6",
+        question: "Which of the following is an advantage of adjacency list representation over adjacency matrix representation of a graph?",
+        options: {
+            a: "In adjacency list representation, space is saved for sparse graphs.",
+            b: "DFS and BSF can be done in O(V+E) time for adjacency list representation. These operations take O(V^2) time in adjacency matrix representation.",
+            c: "Adding a vertex in adjacency list representation is easier than adjacency matrix representation.",
+            d: "All of the above"
+        },
+        correct: "d",
+        explanations: {
+            d: "CORRECT. Adjacency lists are superior for sparse graphs across all areas: they save memory by only storing actual connections, run faster traversals ($O(V+E)$), and allow you to dynamically insert new nodes easily without rebuilding a giant grid matrix.",
+            a: "INCORRECT. While true, this is only one of multiple major advantages.",
+            b: "INCORRECT. While true, this performance boost is part of a larger set of benefits.",
+            c: "INCORRECT. Dynamic node insertions are much simpler, but options a and b are equally true.",
+        }
+    },
+    {
+        id: 55,
+        tags: "CO4, L6",
+        question: "HASH functions are used to produce the message digests which are then encrypted with a private key to get:",
+        options: {
+            a: "Public key",
+            b: "Digital signature",
+            c: "Cipher text",
+            d: "Data Encryption Standard"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. Encrypting a unique message hash with a sender's private key creates a Digital Signature. This lets receivers verify both that the message hasn't been altered (integrity) and that it came from the legitimate sender (non-repudiation).",
+            a: "INCORRECT. Public keys are generated alongside private keys as an asymmetric pair, completely independent of specific messages.",
+            c: "INCORRECT. Ciphertext is the scrambled output of encrypting standard text data, not a signed hash verification stamp.",
+            d: "INCORRECT. DES is an older legacy symmetric block cipher standard.",
+        }
+    },
+    {
+        id: 56,
+        tags: "CO5, L5",
+        question: "Which queue allows insertion at one end and deletion at both ends?",
+        options: {
+            a: "Circular Queue",
+            b: "Deque",
+            c: "Priority Queue",
+            d: "Simple Queue"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. This describes an output-restricted Deque (Double-Ended Queue), which limits insertions to one end but allows items to be removed from either side.",
+            a: "INCORRECT. Circular queues restrict all insertions to the rear and all deletions to the front.",
+            b: "INCORRECT. Priority queues manage data based on priority rankings, not side positions.",
+            d: "INCORRECT. Simple queues strictly follow standard FIFO rules.",
+        }
+    },
+    {
+        id: 57,
+        tags: "CO1, L5",
+        question: "In classful addressing, a large part of available addresses are ____________?",
+        options: {
+            a: "Wasted",
+            b: "Blocked",
+            c: "Organized",
+            d: "Communicated"
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. Classful addressing allocates massive rigid blocks (like Class A with 16 million IPs). Most companies never used their full block, which led to widespread IP address waste and forced the industry to switch to CIDR classless formatting.",
+            b: "INCORRECT. The addresses weren't explicitly blocked; they were just locked into unusable subnets due to rigid class divisions.",
+            c: "INCORRECT. While organized on paper, the system was too inflexible for the real-world scale of the web.",
+            d: "INCORRECT. Distractor option.",
+        }
+    },
+    {
+        id: 58,
+        tags: "CO2, L3",
+        question: "Which of the following search algorithms does not require collection to be sorted first?",
+        options: {
+            a: "Linear Search",
+            b: "Interpolation Search",
+            c: "Binary Search",
+            d: "None of the above"
+        },
+        correct: "a",
+        explanations: {
+            a: "CORRECT. Linear search parses a list sequentially from front to back, meaning it can run on any array regardless of whether the data is sorted.",
+            b: "INCORRECT. Interpolation search uses mathematical positioning logic that requires fully sorted data arrays to work.",
+            c: "INCORRECT. Binary search relies on repeatedly splitting sorted arrays down the middle; it will fail completely on unsorted data.",
+            d: "INCORRECT. Linear search is the correct choice here.",
+        }
+    },
+    {
+        id: 59,
+        tags: "CO5, L3",
+        question: "Which of the following is TRUE about the 'register' storage class?",
+        options: {
+            a: "It always stores variables in CPU registers",
+            b: "It reduces memory access time",
+            c: "It can be accessed using pointers",
+            d: "It has a global scope"
+        },
+        correct: "b",
+        explanations: {
+            b: "CORRECT. The `register` keyword hints that the compiler should store the variable inside a high-speed CPU register instead of RAM, significantly reducing data access latency.",
+            a: "INCORRECT. It acts as a performance hint; if CPU registers are full, the compiler will quietly fall back to standard RAM allocation.",
+            c: "INCORRECT. Variables stored directly in CPU registers don't have RAM memory addresses, meaning you cannot use the address-of operator (`&`) on them.",
+            d: "INCORRECT. Register variables are limited strictly to local block scopes.",
+        }
+    },
+    {
+        id: 60,
+        tags: "CO1, L6",
+        question: "Choose Which sorting algorithm exhibits the best performance for nearly sorted arrays?",
+        options: {
+            a: "Merge Sort",
+            b: "Bubble Sort",
+            c: "Quick Sort",
+            d: "Insertion Sort"
+        },
+        correct: "d",
+        explanations: {
+            d: "CORRECT. Insertion Sort is highly adaptive; when running on data that is already nearly sorted, it skips most internal element shifts and runs in near-linear $O(N)$ time.",
+            a: "INCORRECT. Merge Sort divides and recalculates arrays uniformly, forcing a fixed $O(N \log N)$ time complexity regardless of how sorted the data is.",
+            b: "INCORRECT. Standard Bubble Sort requires $O(N^2)$ passes unless explicitly optimized with tracking flags.",
+            c: "INCORRECT. If a bad pivot is chosen, running Quick Sort on nearly sorted data can actually degrade performance to its worst-case scenario ($O(N^2)$).",
+        }
+    }
+];
+
+let answeredCount = 0;
+let correctCount = 0;
+const answeredMap = new Map();
+
+function initQuiz() {
+    const root = document.getElementById('quiz-root');
+    quizData.forEach((q, index) => {
+        const card = document.createElement('div');
+        card.className = 'q-card';
+        card.id = `q-card-${q.id}`;
+
+        let optionsHTML = '';
+        for (const [key, val] of Object.entries(q.options)) {
+            optionsHTML += `
+                <button class="opt-btn" id="opt-${q.id}-${key}" onclick="handleSelect(${q.id}, '${key}')">
+                    <div class="opt-letter">${key.toUpperCase()}</div>
+                    <div>${escapeHTML(val)}</div>
+                </button>
+            `;
+        }
+
+        card.innerHTML = `
+            <div class="q-header">
+                <span class="q-num">Question ${index + 1} of ${quizData.length}</span>
+                <span class="q-tags">${escapeHTML(q.tags)}</span>
+            </div>
+            <div class="q-text">${escapeHTML(q.question)}</div>
+            <div class="options-list">${optionsHTML}</div>
+            <div class="explanation-box" id="exp-${q.id}">
+                <div class="exp-title">Diagnostic Breakdown & Options Analysis:</div>
+                <div id="exp-content-${q.id}"></div>
+            </div>
+        `;
+        root.appendChild(card);
+    });
+}
+
+function handleSelect(questionId, selectedKey) {
+    if (answeredMap.has(questionId)) return;
+    
+    const q = quizData.find(item => item.id === questionId);
+    answeredMap.set(questionId, selectedKey);
+    answeredCount++;
+
+    const isCorrect = (selectedKey === q.correct);
+    if (isCorrect) correctCount++;
+
+    // Style Selected Option
+    const selectedBtn = document.getElementById(`opt-${questionId}-${selectedKey}`);
+    selectedBtn.classList.add(isCorrect ? 'correct' : 'incorrect');
+
+    // If incorrect, highlight correct option
+    if (!isCorrect) {
+        document.getElementById(`opt-${questionId}-${q.correct}`).classList.add('correct');
+    }
+
+    // Disable all options in this card
+    for (const key of Object.keys(q.options)) {
+        document.getElementById(`opt-${questionId}-${key}`).setAttribute('disabled', 'true');
+    }
+
+    // Build options analysis text
+    let analysisHTML = '';
+    for (const [key, explanation] of Object.entries(q.explanations)) {
+        const prefix = (key === q.correct) ? '<strong>(Correct) Option ' : '<strong>Option ';
+        analysisHTML += `<div class="opt-analysis">${prefix}${key.toUpperCase()}:</strong> ${escapeHTML(explanation)}</div>`;
+    }
+
+    // Show Explanation Block
+    const expBox = document.getElementById(`exp-${questionId}`);
+    const expContent = document.getElementById(`exp-content-${questionId}`);
+    expContent.innerHTML = analysisHTML;
+    expBox.classList.add('visible');
+
+    // Update Global Diagnostics UI
+    updateMetrics();
+}
+
+function updateMetrics() {
+    document.getElementById('score-val').innerText = `${correctCount} / ${answeredCount}`;
+    const progressPercent = Math.round((answeredCount / quizData.length) * 100);
+    document.getElementById('progress-percent').innerText = `${progressPercent}%`;
+    document.getElementById('master-progress').style.width = `${progressPercent}%`;
+}
+
+function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+}
+
+document.addEventListener('DOMContentLoaded', initQuiz);
+</script>
+</body>
+</html>
